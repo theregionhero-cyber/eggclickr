@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EggClicker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      text-align: center;
+      padding: 40px 16px;
+    }
+    h1 {
+      margin-bottom: 8px;
+    }
+    #egg {
+      width: 160px;
+      height: 200px;
+      margin: 24px auto;
+      border-radius: 50% 50% 45% 45%;
+      background: radial-gradient(circle at 30% 20%, #fef3c7, #fbbf24);
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.7);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.05s ease;
+      user-select: none;
+    }
+    #egg:active {
+      transform: scale(0.95);
+    }
+    #egg span {
+      font-size: 32px;
+      color: #78350f;
+      font-weight: bold;
+    }
+    .stats {
+      margin: 16px 0;
+      font-size: 18px;
+    }
+    .upgrades {
+      margin-top: 24px;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+    .upgrade {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #fbbf24;
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #111827;
+    }
+    button:disabled {
+      background: #4b5563;
+      cursor: not-allowed;
+      color: #9ca3af;
+    }
+    #saveStatus {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <h1>EggClicker</h1>
+  <p>Click the egg to earn yolks and buy upgrades.</p>
+
+  <div id="egg">
+    <span>🥚</span>
+  </div>
+
+  <div class="stats">
+    <div>Yolks: <span id="yolks">0</span></div>
+    <div>Yolks per click: <span id="yolksPerClick">1</span></div>
+    <div>Yolks per second: <span id="yolksPerSecond">0</span></div>
+  </div>
+
+  <div class="upgrades">
+    <h2>Upgrades</h2>
+
+    <div class="upgrade">
+      <div>
+        <strong>Stronger Tap</strong><br />
+        +1 yolk per click (Cost: <span id="tapCost">10</span>)
+      </div>
+      <button id="buyTap">Buy</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Auto Hatcher</strong><br />
+        +1 yolk per second (Cost: <span id="autoCost">25</span>)
+      </div>
+      <button id="buyAuto">Buy</button>
+    </div>
+
+    <button id="saveGame">Save Progress</button>
+    <button id="resetGame">Reset</button>
+    <div id="saveStatus"></div>
+  </div>
+
+  <script>
+    // Basic game state
+    let yolks = 0;
+    let yolksPerClick = 1;
+    let yolksPerSecond = 0;
+    let tapCost = 10;
+    let autoCost = 25;
+
+    const yolksEl = document.getElementById('yolks');
+    const yolksPerClickEl = document.getElementById('yolksPerClick');
+    const yolksPerSecondEl = document.getElementById('yolksPerSecond');
+    const tapCostEl = document.getElementById('tapCost');
+    const autoCostEl = document.getElementById('autoCost');
+    const eggEl = document.getElementById('egg');
+    const buyTapBtn = document.getElementById('buyTap');
+    const buyAutoBtn = document.getElementById('buyAuto');
+    const saveBtn = document.getElementById('saveGame');
+    const resetBtn = document.getElementById('resetGame');
+    const saveStatusEl = document.getElementById('saveStatus');
+
+    function updateUI() {
+      yolksEl.textContent = Math.floor(yolks);
+      yolksPerClickEl.textContent = yolksPerClick;
+      yolksPerSecondEl.textContent = yolksPerSecond;
+      tapCostEl.textContent = tapCost;
+      autoCostEl.textContent = autoCost;
+
+      buyTapBtn.disabled = yolks < tapCost;
+      buyAutoBtn.disabled = yolks < autoCost;
+    }
+
+    eggEl.addEventListener('click', () => {
+      yolks += yolksPerClick;
+      updateUI();
+    });
+
+    buyTapBtn.addEventListener('click', () => {
+      if (yolks >= tapCost) {
+        yolks -= tapCost;
+        yolksPerClick += 1;
+        tapCost = Math.round(tapCost * 1.5);
+        updateUI();
+      }
+    });
+
+    buyAutoBtn.addEventListener('click', () => {
+      if (yolks >= autoCost) {
+        yolks -= autoCost;
+        yolksPerSecond += 1;
+        autoCost = Math.round(autoCost * 1.7);
+        updateUI();
+      }
+    });
+
+    // Passive income loop
+    setInterval(() => {
+      if (yolksPerSecond > 0) {
+        yolks += yolksPerSecond / 10; // 10 ticks per second
+        updateUI();
+      }
+    }, 100);
+
+    // Save / load using localStorage
+    function saveGame() {
+      const data = {
+        yolks,
+        yolksPerClick,
+        yolksPerSecond,
+        tapCost,
+        autoCost
+      };
+      localStorage.setItem('eggClickerSave', JSON.stringify(data));
+      saveStatusEl.textContent = 'Game saved!';
+      setTimeout(() => (saveStatusEl.textContent = ''), 2000);
+    }
+
+    function loadGame() {
+      const raw = localStorage.getItem('eggClickerSave');
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        yolks = data.yolks ?? 0;
+        yolksPerClick = data.yolksPerClick ?? 1;
+        yolksPerSecond = data.yolksPerSecond ?? 0;
+        tapCost = data.tapCost ?? 10;
+        autoCost = data.autoCost ?? 25;
+        updateUI();
+      } catch (e) {
+        console.error('Failed to load save', e);
+      }
+    }
+
+    saveBtn.addEventListener('click', saveGame);
+
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Reset your EggClicker progress?')) return;
+      yolks = 0;
+      yolksPerClick = 1;
+      yolksPerSecond = 0;
+      tapCost = 10;
+      autoCost = 25;
+      localStorage.removeItem('eggClickerSave');
+      updateUI();
+    });
+
+    // Start
+    loadGame();
+    updateUI();
+  </script>
+</body>
+</html>
