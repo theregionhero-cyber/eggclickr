@@ -1,0 +1,756 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>EggClicker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      text-align: center;
+      padding: 40px 16px;
+    }
+    h1 {
+      margin-bottom: 8px;
+    }
+    #egg {
+      width: 160px;
+      height: 200px;
+      margin: 24px auto;
+      border-radius: 50% 50% 45% 45%;
+      background: radial-gradient(circle at 30% 20%, #fef3c7, #fbbf24);
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.7);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.05s ease;
+      user-select: none;
+    }
+    #egg:active {
+      transform: scale(0.95);
+    }
+    #egg span {
+      font-size: 32px;
+      color: #78350f;
+      font-weight: bold;
+    }
+    .stats {
+      margin: 16px 0;
+      font-size: 18px;
+    }
+    .panel {
+      margin-top: 24px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+    .panel h2 {
+      margin-top: 0;
+    }
+    .upgrade {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #fbbf24;
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #111827;
+    }
+    button:disabled {
+      background: #4b5563;
+      cursor: not-allowed;
+      color: #9ca3af;
+    }
+    #saveStatus {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    .pet-list {
+      margin-top: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .pet-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      margin-bottom: 6px;
+      border-radius: 10px;
+      background: rgba(30, 64, 175, 0.3);
+    }
+    .pet-emoji {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .pet-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .pet-name {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .pet-rarity {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    .pet-effect {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    .rarity-common {
+      color: #9ca3af;
+    }
+    .rarity-rare {
+      color: #38bdf8;
+    }
+    .rarity-epic {
+      color: #a855f7;
+    }
+    .rarity-legendary {
+      color: #facc15;
+    }
+    .buy-amount {
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .buy-amount button {
+      padding: 4px 10px;
+      margin-left: 4px;
+      font-size: 12px;
+    }
+    .buy-amount button.active {
+      background: #f59e0b;
+    }
+  </style>
+</head>
+<body>
+  <h1>EggClicker</h1>
+  <p>Click the egg to earn yolks, buy upgrades, hatch pets, and rebirth for huge boosts.</p>
+
+  <div id="egg">
+    <span>🥚</span>
+  </div>
+
+  <div class="stats">
+    <div>Yolks: <span id="yolks">0</span></div>
+    <div>Rebirths: <span id="rebirths">0</span></div>
+    <div>Rebirth multiplier: <span id="rebirthMult">1.0x</span></div>
+    <div>Yolks per click (before pets/rebirth): <span id="baseYpc">1</span></div>
+    <div>Global yolk multiplier (pets × rebirths): <span id="globalMult">1.0x</span></div>
+    <div>Base yolks per second: <span id="baseYps">0</span></div>
+    <div>Pets yolks per second: <span id="petsYps">0</span></div>
+    <div>Total yolks per second (after pets/rebirth): <span id="totalYps">0</span></div>
+  </div>
+
+  <!-- Upgrades panel -->
+  <div class="panel">
+    <h2>Upgrades</h2>
+
+    <div class="buy-amount">
+      Buy amount:
+      <button id="buy1" class="active">1x</button>
+      <button id="buy10">10x</button>
+      <button id="buy100">100x</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Stronger Tap</strong><br />
+        +1 yolk per click (base) (Current cost: <span id="tapCost">10</span>)
+      </div>
+      <button id="buyTap">Buy</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Auto Hatcher</strong><br />
+        +1 yolk per second (base) (Current cost: <span id="autoCost">25</span>)
+      </div>
+      <button id="buyAuto">Buy</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Golden Egg</strong><br />
+        +5 yolks per click (base) (Current cost: <span id="goldenCost">150</span>)
+      </div>
+      <button id="buyGolden">Buy</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Hatchery</strong><br />
+        +5 yolks per second (base) (Current cost: <span id="hatcheryCost">300</span>)
+      </div>
+      <button id="buyHatchery">Buy</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Mega Tap</strong><br />
+        +25 yolks per click (base) (Current cost: <span id="megaTapCost">2000</span>)
+      </div>
+      <button id="buyMegaTap">Buy</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Super Hatchery</strong><br />
+        +25 yolks per second (base) (Current cost: <span id="superHatcheryCost">5000</span>)
+      </div>
+      <button id="buySuperHatchery">Buy</button>
+    </div>
+
+    <div class="upgrade">
+      <div>
+        <strong>Lucky Shells</strong><br />
+        Increases rare/epic/legendary pet chance (Current cost: <span id="luckyCost">10000</span>)
+      </div>
+      <button id="buyLucky">Buy</button>
+    </div>
+
+    <button id="saveGame">Save Progress</button>
+    <button id="resetGame">Reset</button>
+    <div id="saveStatus"></div>
+  </div>
+
+  <!-- Pets panel -->
+  <div class="panel">
+    <h2>Pet Hatching</h2>
+    <p>Hatch random pets. 3 of the same pet combine into a higher level. Some pets give flat yolks/sec, some boost everything with a multiplier.</p>
+
+    <div class="upgrade">
+      <div>
+        <strong>Hatch a Pet</strong><br />
+        Cost: <span id="petHatchCost">100</span> yolks
+      </div>
+      <button id="hatchPetBtn">Hatch</button>
+    </div>
+
+    <div id="petList" class="pet-list">
+      <!-- Pet cards will be added here -->
+    </div>
+  </div>
+
+  <!-- Rebirth panel -->
+  <div class="panel">
+    <h2>Rebirth</h2>
+    <p>Rebirth to reset your yolks but keep all upgrades and pets. Each rebirth gives +50% to all yolks. First rebirth costs 10,000 yolks and each next one costs 10× more.</p>
+
+    <div class="upgrade">
+      <div>
+        <strong>Rebirth</strong><br />
+        Requires: <span id="rebirthCost">10000</span> yolks
+      </div>
+      <button id="rebirthBtn">Rebirth</button>
+    </div>
+  </div>
+
+  <script>
+    // Basic game state
+    let yolks = 0;
+    let baseYolksPerClick = 1;      // before multipliers
+    let baseYolksPerSecond = 0;     // from upgrades, before multipliers
+    let tapCost = 10;
+    let autoCost = 25;
+    let goldenCost = 150;
+    let hatcheryCost = 300;
+    let megaTapCost = 2000;
+    let superHatcheryCost = 5000;
+    let luckyCost = 10000;
+    let luckyLevel = 0; // affects pet odds
+
+    // Buy amount (1, 10, 100)
+    let buyAmount = 1;
+
+    // Pet system state
+    let petHatchCost = 100;
+    // Each pet: { name, emoji, rarity, level, type, value }
+    // type: 'flatYps' or 'multiplier'
+    let petsOwned = [];
+
+    // Rebirth system
+    let rebirths = 0;
+    let rebirthCostCurrent = 10000; // first rebirth cost
+    const rebirthMultPerRebirth = 0.5; // +50% per rebirth
+
+    const yolksEl = document.getElementById('yolks');
+    const rebirthsEl = document.getElementById('rebirths');
+    const rebirthMultEl = document.getElementById('rebirthMult');
+    const baseYpcEl = document.getElementById('baseYpc');
+    const baseYpsEl = document.getElementById('baseYps');
+    const petsYpsEl = document.getElementById('petsYps');
+    const totalYpsEl = document.getElementById('totalYps');
+    const globalMultEl = document.getElementById('globalMult');
+
+    const tapCostEl = document.getElementById('tapCost');
+    const autoCostEl = document.getElementById('autoCost');
+    const goldenCostEl = document.getElementById('goldenCost');
+    const hatcheryCostEl = document.getElementById('hatcheryCost');
+    const megaTapCostEl = document.getElementById('megaTapCost');
+    const superHatcheryCostEl = document.getElementById('superHatcheryCost');
+    const luckyCostEl = document.getElementById('luckyCost');
+
+    const eggEl = document.getElementById('egg');
+    const buyTapBtn = document.getElementById('buyTap');
+    const buyAutoBtn = document.getElementById('buyAuto');
+    const buyGoldenBtn = document.getElementById('buyGolden');
+    const buyHatcheryBtn = document.getElementById('buyHatchery');
+    const buyMegaTapBtn = document.getElementById('buyMegaTap');
+    const buySuperHatcheryBtn = document.getElementById('buySuperHatchery');
+    const buyLuckyBtn = document.getElementById('buyLucky');
+
+    const saveBtn = document.getElementById('saveGame');
+    const resetBtn = document.getElementById('resetGame');
+    const saveStatusEl = document.getElementById('saveStatus');
+
+    // Buy amount buttons
+    const buy1Btn = document.getElementById('buy1');
+    const buy10Btn = document.getElementById('buy10');
+    const buy100Btn = document.getElementById('buy100');
+
+    // Pet elements
+    const petHatchCostEl = document.getElementById('petHatchCost');
+    const hatchPetBtn = document.getElementById('hatchPetBtn');
+    const petListEl = document.getElementById('petList');
+
+    // Rebirth elements
+    const rebirthCostEl = document.getElementById('rebirthCost');
+    const rebirthBtn = document.getElementById('rebirthBtn');
+
+    function setBuyAmount(amount) {
+      buyAmount = amount;
+      buy1Btn.classList.toggle('active', amount === 1);
+      buy10Btn.classList.toggle('active', amount === 10);
+      buy100Btn.classList.toggle('active', amount === 100);
+    }
+
+    buy1Btn.addEventListener('click', () => setBuyAmount(1));
+    buy10Btn.addEventListener('click', () => setBuyAmount(10));
+    buy100Btn.addEventListener('click', () => setBuyAmount(100));
+
+    function getRebirthMultiplier() {
+      return 1 + rebirths * rebirthMultPerRebirth;
+    }
+
+    function getGlobalMultiplierFromPets() {
+      let mult = 1;
+      petsOwned.forEach(pet => {
+        if (pet.type === 'multiplier') {
+          const bonus = 1 + pet.value * (pet.level || 1);
+          mult *= bonus;
+        }
+      });
+      return mult;
+    }
+
+    function getGlobalMultiplier() {
+      return getGlobalMultiplierFromPets() * getRebirthMultiplier();
+    }
+
+    function getPetYps(pet) {
+      if (pet.type === 'flatYps') {
+        return pet.value * (pet.level || 1);
+      }
+      return 0;
+    }
+
+    function getTotalPetsYps() {
+      return petsOwned.reduce((sum, pet) => sum + getPetYps(pet), 0);
+    }
+
+    function getTotalYps() {
+      const mult = getGlobalMultiplier();
+      const flat = baseYolksPerSecond + getTotalPetsYps();
+      return flat * mult;
+    }
+
+    function getEffectiveYolksPerClick() {
+      const mult = getGlobalMultiplier();
+      return baseYolksPerClick * mult;
+    }
+
+    function getRebirthCost() {
+      return rebirthCostCurrent;
+    }
+
+    function updateUI() {
+      const petsYps = getTotalPetsYps();
+      const totalYps = getTotalYps();
+      const rebMult = getRebirthMultiplier();
+      const globalMult = getGlobalMultiplier();
+
+      yolksEl.textContent = Math.floor(yolks);
+      rebirthsEl.textContent = rebirths;
+      rebirthMultEl.textContent = rebMult.toFixed(2) + 'x';
+
+      baseYpcEl.textContent = baseYolksPerClick.toFixed(1);
+      baseYpsEl.textContent = baseYolksPerSecond.toFixed(1);
+      petsYpsEl.textContent = petsYps.toFixed(1);
+      totalYpsEl.textContent = totalYps.toFixed(1);
+      globalMultEl.textContent = globalMult.toFixed(2) + 'x';
+
+      tapCostEl.textContent = tapCost;
+      autoCostEl.textContent = autoCost;
+      goldenCostEl.textContent = goldenCost;
+      hatcheryCostEl.textContent = hatcheryCost;
+      megaTapCostEl.textContent = megaTapCost;
+      superHatcheryCostEl.textContent = superHatcheryCost;
+      luckyCostEl.textContent = luckyCost;
+
+      petHatchCostEl.textContent = petHatchCost;
+
+      const cost = getRebirthCost();
+      rebirthCostEl.textContent = cost;
+      rebirthBtn.disabled = yolks < cost;
+
+      renderPetList();
+    }
+
+    eggEl.addEventListener('click', () => {
+      yolks += getEffectiveYolksPerClick();
+      updateUI();
+    });
+
+    function buyUpgradeMany(type) {
+      for (let i = 0; i < buyAmount; i++) {
+        if (type === 'tap') {
+          if (yolks < tapCost) break;
+          yolks -= tapCost;
+          baseYolksPerClick += 1;
+          tapCost = Math.round(tapCost * 1.5);
+        } else if (type === 'auto') {
+          if (yolks < autoCost) break;
+          yolks -= autoCost;
+          baseYolksPerSecond += 1;
+          autoCost = Math.round(autoCost * 1.7);
+        } else if (type === 'golden') {
+          if (yolks < goldenCost) break;
+          yolks -= goldenCost;
+          baseYolksPerClick += 5;
+          goldenCost = Math.round(goldenCost * 2);
+        } else if (type === 'hatchery') {
+          if (yolks < hatcheryCost) break;
+          yolks -= hatcheryCost;
+          baseYolksPerSecond += 5;
+          hatcheryCost = Math.round(hatcheryCost * 2.2);
+        } else if (type === 'megaTap') {
+          if (yolks < megaTapCost) break;
+          yolks -= megaTapCost;
+          baseYolksPerClick += 25;
+          megaTapCost = Math.round(megaTapCost * 2.5);
+        } else if (type === 'superHatchery') {
+          if (yolks < superHatcheryCost) break;
+          yolks -= superHatcheryCost;
+          baseYolksPerSecond += 25;
+          superHatcheryCost = Math.round(superHatcheryCost * 2.5);
+        } else if (type === 'lucky') {
+          if (yolks < luckyCost) break;
+          yolks -= luckyCost;
+          luckyLevel += 1;
+          luckyCost = Math.round(luckyCost * 3);
+        }
+      }
+      updateUI();
+    }
+
+    buyTapBtn.addEventListener('click', () => buyUpgradeMany('tap'));
+    buyAutoBtn.addEventListener('click', () => buyUpgradeMany('auto'));
+    buyGoldenBtn.addEventListener('click', () => buyUpgradeMany('golden'));
+    buyHatcheryBtn.addEventListener('click', () => buyUpgradeMany('hatchery'));
+    buyMegaTapBtn.addEventListener('click', () => buyUpgradeMany('megaTap'));
+    buySuperHatcheryBtn.addEventListener('click', () => buyUpgradeMany('superHatchery'));
+    buyLuckyBtn.addEventListener('click', () => buyUpgradeMany('lucky'));
+
+    // Pet pool
+    const petPool = [
+      { name: 'Baby Chick', emoji: '🐣', rarity: 'Common', type: 'flatYps', value: 0.2 },
+      { name: 'Speckled Eggling', emoji: '🥚', rarity: 'Common', type: 'flatYps', value: 0.3 },
+      { name: 'Sunny Chick', emoji: '🐤', rarity: 'Common', type: 'flatYps', value: 0.4 },
+
+      { name: 'Blue Shell Bird', emoji: '🐦', rarity: 'Rare', type: 'flatYps', value: 1 },
+      { name: 'Golden Chick', emoji: '🐥', rarity: 'Rare', type: 'multiplier', value: 0.05 },
+
+      { name: 'Phoenix Hatchling', emoji: '🐉', rarity: 'Epic', type: 'flatYps', value: 4 },
+      { name: 'Dragon Egg Spirit', emoji: '🐲', rarity: 'Epic', type: 'multiplier', value: 0.10 },
+
+      { name: 'Galaxy Yolk', emoji: '🌌', rarity: 'Legendary', type: 'multiplier', value: 0.25 }
+    ];
+
+    function rollPet() {
+      // Base odds
+      let commonChance = 0.6;
+      let rareChance = 0.25;
+      let epicChance = 0.12;
+      let legendaryChance = 0.03;
+
+      // Lucky Shells: shift some chance from common to higher rarities
+      const bonus = Math.min(luckyLevel * 0.02, 0.3); // cap bonus
+      commonChance = Math.max(0.3, commonChance - bonus);
+      rareChance += bonus * 0.5;
+      epicChance += bonus * 0.3;
+      legendaryChance += bonus * 0.2;
+
+      const roll = Math.random();
+      let pool;
+      if (roll < commonChance) {
+        pool = petPool.filter(p => p.rarity === 'Common');
+      } else if (roll < commonChance + rareChance) {
+        pool = petPool.filter(p => p.rarity === 'Rare');
+      } else if (roll < commonChance + rareChance + epicChance) {
+        pool = petPool.filter(p => p.rarity === 'Epic');
+      } else {
+        pool = petPool.filter(p => p.rarity === 'Legendary');
+      }
+      const base = pool[Math.floor(Math.random() * pool.length)];
+      return { ...base, level: 1 };
+    }
+
+    function combinePetsIfPossible() {
+      const keyMap = {};
+      petsOwned.forEach((pet, index) => {
+        const key = `${pet.name}|${pet.rarity}|${pet.level}`;
+        if (!keyMap[key]) keyMap[key] = [];
+        keyMap[key].push(index);
+      });
+
+      let combined = false;
+
+      Object.keys(keyMap).forEach(key => {
+        const indices = keyMap[key];
+        while (indices.length >= 3) {
+          combined = true;
+          const i1 = indices.pop();
+          const i2 = indices.pop();
+          const i3 = indices.pop();
+
+          const basePet = petsOwned[i1];
+
+          const toRemove = [i1, i2, i3].sort((a, b) => b - a);
+          toRemove.forEach(i => {
+            petsOwned.splice(i, 1);
+          });
+
+          const newPet = {
+            name: basePet.name,
+            emoji: basePet.emoji,
+            rarity: basePet.rarity,
+            type: basePet.type,
+            value: basePet.value,
+            level: basePet.level + 1
+          };
+          petsOwned.push(newPet);
+
+          return;
+        }
+      });
+
+      if (combined) {
+        combinePetsIfPossible();
+      }
+    }
+
+    function renderPetList() {
+      petListEl.innerHTML = '';
+      if (petsOwned.length === 0) {
+        const empty = document.createElement('div');
+        empty.textContent = 'No pets yet. Hatch one!';
+        empty.style.fontSize = '14px';
+        empty.style.opacity = '0.8';
+        petListEl.appendChild(empty);
+        return;
+      }
+
+      petsOwned.forEach((pet, index) => {
+        const card = document.createElement('div');
+        card.className = 'pet-card';
+
+        const emoji = document.createElement('div');
+        emoji.className = 'pet-emoji';
+        emoji.textContent = pet.emoji;
+
+        const info = document.createElement('div');
+        info.className = 'pet-info';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'pet-name';
+        const levelText = pet.level ? ` Lv.${pet.level}` : '';
+        nameEl.textContent = `${pet.name}${levelText} #${index + 1}`;
+
+        const rarityEl = document.createElement('div');
+        rarityEl.className = 'pet-rarity';
+        rarityEl.textContent = pet.rarity;
+        if (pet.rarity === 'Common') rarityEl.classList.add('rarity-common');
+        if (pet.rarity === 'Rare') rarityEl.classList.add('rarity-rare');
+        if (pet.rarity === 'Epic') rarityEl.classList.add('rarity-epic');
+        if (pet.rarity === 'Legendary') rarityEl.classList.add('rarity-legendary');
+
+        const effectEl = document.createElement('div');
+        effectEl.className = 'pet-effect';
+        if (pet.type === 'flatYps') {
+          const yps = pet.value * (pet.level || 1);
+          effectEl.textContent = `+${yps.toFixed(1)} yolks/sec`;
+        } else if (pet.type === 'multiplier') {
+          const bonusPercent = pet.value * (pet.level || 1) * 100;
+          effectEl.textContent = `+${bonusPercent.toFixed(1)}% all yolks`;
+        }
+
+        info.appendChild(nameEl);
+        info.appendChild(rarityEl);
+        info.appendChild(effectEl);
+
+        card.appendChild(emoji);
+        card.appendChild(info);
+
+        petListEl.appendChild(card);
+      });
+    }
+
+    hatchPetBtn.addEventListener('click', () => {
+      if (yolks < petHatchCost) return;
+      yolks -= petHatchCost;
+      petHatchCost = Math.round(petHatchCost * 1.3);
+      const newPet = rollPet();
+      petsOwned.push(newPet);
+      combinePetsIfPossible();
+      updateUI();
+    });
+
+    // Rebirth logic – reset only money, keep upgrades and pets
+    rebirthBtn.addEventListener('click', () => {
+      const cost = getRebirthCost();
+      if (yolks < cost) return;
+      if (!confirm('Rebirth will reset your yolks but keep upgrades and pets, and give you a permanent boost. Continue?')) return;
+
+      rebirths += 1;
+      // Next rebirth costs 10× more
+      rebirthCostCurrent = rebirthCostCurrent * 10;
+
+      // Reset only money
+      yolks = 0;
+
+      updateUI();
+    });
+
+    // Passive income loop (total YPS after multipliers)
+    setInterval(() => {
+      const totalYps = getTotalYps();
+      if (totalYps > 0) {
+        yolks += totalYps / 10; // 10 ticks per second
+        updateUI();
+      }
+    }, 100);
+
+    // Save / load using localStorage
+    function saveGame() {
+      const data = {
+        yolks,
+        baseYolksPerClick,
+        baseYolksPerSecond,
+        tapCost,
+        autoCost,
+        goldenCost,
+        hatcheryCost,
+        megaTapCost,
+        superHatcheryCost,
+        luckyCost,
+        luckyLevel,
+        petHatchCost,
+        petsOwned,
+        rebirths,
+        rebirthCostCurrent
+      };
+      localStorage.setItem('eggClickerSave', JSON.stringify(data));
+      saveStatusEl.textContent = 'Game saved!';
+      setTimeout(() => (saveStatusEl.textContent = ''), 2000);
+    }
+
+    function loadGame() {
+      const raw = localStorage.getItem('eggClickerSave');
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        yolks = data.yolks ?? 0;
+        baseYolksPerClick = data.baseYolksPerClick ?? 1;
+        baseYolksPerSecond = data.baseYolksPerSecond ?? 0;
+        tapCost = data.tapCost ?? 10;
+        autoCost = data.autoCost ?? 25;
+        goldenCost = data.goldenCost ?? 150;
+        hatcheryCost = data.hatcheryCost ?? 300;
+        megaTapCost = data.megaTapCost ?? 2000;
+        superHatcheryCost = data.superHatcheryCost ?? 5000;
+        luckyCost = data.luckyCost ?? 10000;
+        luckyLevel = data.luckyLevel ?? 0;
+        petHatchCost = data.petHatchCost ?? 100;
+        rebirths = data.rebirths ?? 0;
+        rebirthCostCurrent = data.rebirthCostCurrent ?? 10000;
+        petsOwned = Array.isArray(data.petsOwned)
+          ? data.petsOwned.map(p => ({
+              name: p.name,
+              emoji: p.emoji,
+              rarity: p.rarity,
+              type: p.type || 'flatYps',
+              value: p.value ?? 0.2,
+              level: p.level ?? 1
+            }))
+          : [];
+        updateUI();
+      } catch (e) {
+        console.error('Failed to load save', e);
+      }
+    }
+
+    saveBtn.addEventListener('click', saveGame);
+
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Reset everything including rebirths?')) return;
+      yolks = 0;
+      baseYolksPerClick = 1;
+      baseYolksPerSecond = 0;
+      tapCost = 10;
+      autoCost = 25;
+      goldenCost = 150;
+      hatcheryCost = 300;
+      megaTapCost = 2000;
+      superHatcheryCost = 5000;
+      luckyCost = 10000;
+      luckyLevel = 0;
+      petHatchCost = 100;
+      petsOwned = [];
+      rebirths = 0;
+      rebirthCostCurrent = 10000;
+      localStorage.removeItem('eggClickerSave');
+      updateUI();
+    });
+
+    // Start
+    loadGame();
+    updateUI();
+  </script>
+</body>
+</html>
+
+
